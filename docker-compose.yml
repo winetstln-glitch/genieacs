@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6
+    container_name: genieacs-mongodb
+    restart: always
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - genieacs
+
+  genieacs-cwmp:
+    image: genieacs/genieacs:1.2.13
+    container_name: genieacs-cwmp
+    restart: always
+    environment:
+      - GENIEACS_MONGODB_CONNECTION_URL=mongodb://mongodb:27017/genieacs
+      - GENIEACS_CWMP_INTERFACE=0.0.0.0
+      - GENIEACS_CWMP_PORT=7547
+      - GENIEACS_EXT_DIR=/opt/genieacs/ext
+    volumes:
+      - ./ext:/opt/genieacs/ext
+    ports:
+      - "7547:7547"
+    depends_on:
+      - mongodb
+    networks:
+      - genieacs
+
+  genieacs-nbi:
+    image: genieacs/genieacs:1.2.13
+    container_name: genieacs-nbi
+    restart: always
+    environment:
+      - GENIEACS_MONGODB_CONNECTION_URL=mongodb://mongodb:27017/genieacs
+      - GENIEACS_NBI_INTERFACE=0.0.0.0
+      - GENIEACS_NBI_PORT=7557
+    ports:
+      - "7557:7557"
+    depends_on:
+      - mongodb
+    networks:
+      - genieacs
+
+  genieacs-fs:
+    image: genieacs/genieacs:1.2.13
+    container_name: genieacs-fs
+    restart: always
+    environment:
+      - GENIEACS_MONGODB_CONNECTION_URL=mongodb://mongodb:27017/genieacs
+      - GENIEACS_FS_INTERFACE=0.0.0.0
+      - GENIEACS_FS_PORT=7567
+      - GENIEACS_FS_HOSTNAME=localhost
+    volumes:
+      - ./files:/opt/genieacs/files
+    ports:
+      - "7567:7567"
+    depends_on:
+      - mongodb
+    networks:
+      - genieacs
+
+  genieacs-ui:
+    image: genieacs/genieacs:1.2.13
+    container_name: genieacs-ui
+    restart: always
+    environment:
+      - GENIEACS_MONGODB_CONNECTION_URL=mongodb://mongodb:27017/genieacs
+      - GENIEACS_UI_INTERFACE=0.0.0.0
+      - GENIEACS_UI_PORT=3000
+      - GENIEACS_UI_JWT_SECRET=your-secret-key-change-this-in-production
+    depends_on:
+      - mongodb
+      - genieacs-nbi
+    networks:
+      - genieacs
+
+  nginx:
+    image: nginx:alpine
+    container_name: genieacs-nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./dashboard.html:/usr/share/nginx/html/index.html:ro
+      - ./logos:/usr/share/nginx/logos:ro
+    depends_on:
+      - genieacs-ui
+      - genieacs-cwmp
+      - genieacs-nbi
+      - genieacs-fs
+    networks:
+      - genieacs
+
+volumes:
+  mongodb_data:
+
+networks:
+  genieacs:
