@@ -55,10 +55,14 @@ else
     exit 1
 fi
 
-# Set superadmin role for admin user
-echo -e "${YELLOW}Configuring superadmin privileges...${NC}"
-docker exec genieacs-mongodb mongo genieacs --eval 'db.users.updateOne({_id: "admin"}, {$set: {roles: "admin"}}); db.users.updateOne({_id: "alijayanet"}, {$set: {password: db.users.findOne({_id: "admin"}).password, salt: db.users.findOne({_id: "admin"}).salt}});' > /dev/null 2>&1
-echo -e "${GREEN}✓ Superadmin account ready: admin / admin${NC}"
+# Set superadmin role for dsbilling and remove alijayanet
+echo -e "${YELLOW}Configuring default superadmin credentials...${NC}"
+docker exec genieacs-mongodb mongo genieacs --eval '
+  db.users.deleteOne({_id: "alijayanet"});
+  db.users.updateOne({_id: "dsbilling"}, {$set: {roles: "admin"}});
+  db.users.updateOne({_id: "admin"}, {$set: {roles: "admin"}});
+' > /dev/null 2>&1
+echo -e "${GREEN}✓ Superadmin account ready: dsbilling / ds271015${NC}"
 
 # Restart GenieACS services
 echo ""
@@ -82,5 +86,5 @@ echo -e "${CYAN}  • Mikrotik${NC}"
 echo ""
 echo -e "${NC}Access GenieACS:"
 echo -e "${CYAN}  Dashboard:   http://localhost:8080${NC}"
-echo -e "${CYAN}  GenieACS UI: http://localhost:3000 (admin / admin)${NC}"
+echo -e "${CYAN}  GenieACS UI: http://localhost:3000 (dsbilling / ds271015)${NC}"
 echo ""
