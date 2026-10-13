@@ -89,20 +89,13 @@ if (-not $composeCmd) {
     exit 1
 }
 
-# Build image once cleanly
-Write-Host "[3/4] Building GenieACS 1.2.16 image..." -ForegroundColor Yellow
-docker build -t genieacs-local:1.2.16 .
-if ($LASTEXITCODE -ne 0) {
-    Write-Host "ERROR - Docker build failed" -ForegroundColor Red
-    exit 1
-}
-Write-Host "OK - Image genieacs-local:1.2.16 built successfully" -ForegroundColor Green
-
-# Start containers
-Write-Host "Starting GenieACS containers..." -ForegroundColor Yellow
+# Start containers with pre-built image
+Write-Host "[3/4] Pulling pre-built images and starting GenieACS..." -ForegroundColor Yellow
 if ($composeCmd -eq "docker-compose") {
+    docker-compose pull
     docker-compose up -d
 } else {
+    docker compose pull
     docker compose up -d
 }
 

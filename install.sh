@@ -35,17 +35,9 @@ else
     exit 1
 fi
 
-# Build image once cleanly (avoids BuildKit parallel deadlock)
-echo -e "${YELLOW}[3/4] Building GenieACS 1.2.16 image...${NC}"
-docker build -t genieacs-local:1.2.16 .
-if [ $? -ne 0 ]; then
-    echo -e "${RED} ✘ Docker build failed!${NC}"
-    exit 1
-fi
-echo -e "${GREEN} ✔ Image genieacs-local:1.2.16 built successfully${NC}"
-
-# Start containers
-echo -e "${YELLOW}Starting GenieACS containers...${NC}"
+# Pull pre-built images and start containers
+echo -e "${YELLOW}[3/4] Pulling pre-built images and starting GenieACS...${NC}"
+$COMPOSE_CMD pull
 $COMPOSE_CMD up -d
 if [ $? -eq 0 ]; then
     echo -e "${GREEN} ✔ Containers started successfully${NC}"

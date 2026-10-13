@@ -57,8 +57,8 @@ fi
 
 # Restart GenieACS services
 echo ""
-echo -e "${YELLOW}Restarting GenieACS services to reload configuration...${NC}"
-docker restart genieacs-cwmp genieacs-nbi genieacs-fs genieacs-ui
+echo -e "${YELLOW}Restarting GenieACS service to reload configuration...${NC}"
+docker restart genieacs 2>/dev/null || docker restart genieacs-cwmp genieacs-nbi genieacs-fs genieacs-ui 2>/dev/null
 echo -e "${GREEN}✓ Services restarted${NC}"
 
 echo ""

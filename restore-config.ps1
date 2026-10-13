@@ -49,8 +49,11 @@ if ($LASTEXITCODE -eq 0) {
 
 # Restart GenieACS services to reload config
 Write-Host ""
-Write-Host "Restarting GenieACS services to reload configuration..." -ForegroundColor Yellow
-docker restart genieacs-cwmp genieacs-nbi genieacs-fs genieacs-ui
+Write-Host "Restarting GenieACS service to reload configuration..." -ForegroundColor Yellow
+docker restart genieacs 2>$null
+if ($LASTEXITCODE -ne 0) {
+    docker restart genieacs-cwmp genieacs-nbi genieacs-fs genieacs-ui 2>$null
+}
 Write-Host "OK - Services restarted" -ForegroundColor Green
 
 Write-Host ""

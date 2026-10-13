@@ -10,75 +10,23 @@ services:
     networks:
       - genieacs
 
-  genieacs-ui:
-    image: genieacs-local:1.2.16
-    container_name: genieacs-ui
+  genieacs:
+    image: drumsergio/genieacs:1.2.16.6
+    container_name: genieacs
     restart: unless-stopped
     environment:
-      - GENIEACS_MONGODB_CONNECTION_URL=mongodb://mongodb:27017/genieacs
-      - GENIEACS_UI_INTERFACE=0.0.0.0
-      - GENIEACS_UI_PORT=3000
       - GENIEACS_UI_JWT_SECRET=secret
-    ports:
-      - "3000:3000"
-    depends_on:
-      - mongodb
-      - genieacs-nbi
-    command: genieacs-ui
-    networks:
-      - genieacs
-
-  genieacs-cwmp:
-    image: genieacs-local:1.2.16
-    container_name: genieacs-cwmp
-    restart: unless-stopped
-    environment:
-      - GENIEACS_MONGODB_CONNECTION_URL=mongodb://mongodb:27017/genieacs
-      - GENIEACS_CWMP_INTERFACE=0.0.0.0
-      - GENIEACS_CWMP_PORT=7547
+      - GENIEACS_MONGODB_CONNECTION_URL=mongodb://genieacs-mongodb:27017/genieacs
       - GENIEACS_EXT_DIR=/opt/genieacs/ext
     volumes:
       - ./ext:/opt/genieacs/ext
     ports:
+      - "3000:3000"
       - "7547:7547"
-    depends_on:
-      - mongodb
-    command: genieacs-cwmp
-    networks:
-      - genieacs
-
-  genieacs-nbi:
-    image: genieacs-local:1.2.16
-    container_name: genieacs-nbi
-    restart: unless-stopped
-    environment:
-      - GENIEACS_MONGODB_CONNECTION_URL=mongodb://mongodb:27017/genieacs
-      - GENIEACS_NBI_INTERFACE=0.0.0.0
-      - GENIEACS_NBI_PORT=7557
-    ports:
       - "7557:7557"
-    depends_on:
-      - mongodb
-    command: genieacs-nbi
-    networks:
-      - genieacs
-
-  genieacs-fs:
-    image: genieacs-local:1.2.16
-    container_name: genieacs-fs
-    restart: unless-stopped
-    environment:
-      - GENIEACS_MONGODB_CONNECTION_URL=mongodb://mongodb:27017/genieacs
-      - GENIEACS_FS_INTERFACE=0.0.0.0
-      - GENIEACS_FS_PORT=7567
-      - GENIEACS_FS_HOSTNAME=localhost
-    volumes:
-      - ./files:/opt/genieacs/files
-    ports:
       - "7567:7567"
     depends_on:
       - mongodb
-    command: genieacs-fs
     networks:
       - genieacs
 
@@ -93,10 +41,7 @@ services:
       - ./dashboard.html:/usr/share/nginx/html/index.html:ro
       - ./logos:/usr/share/nginx/logos:ro
     depends_on:
-      - genieacs-ui
-      - genieacs-cwmp
-      - genieacs-nbi
-      - genieacs-fs
+      - genieacs
     networks:
       - genieacs
 
