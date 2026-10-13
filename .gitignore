@@ -1,0 +1,10 @@
+# Ignore the nested git clone of multitab
+multitab/
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+*.swp
+*.log
+.vscode/
+.idea/

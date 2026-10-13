@@ -2,18 +2,38 @@ version: '3.8'
 
 services:
   mongodb:
-    image: mongo:6
+    image: mongo:4.4
     container_name: genieacs-mongodb
-    restart: always
+    restart: unless-stopped
     volumes:
       - mongodb_data:/data/db
     networks:
       - genieacs
 
+  genieacs-ui:
+    build: .
+    image: genieacs-local:1.2.16
+    container_name: genieacs-ui
+    restart: unless-stopped
+    environment:
+      - GENIEACS_MONGODB_CONNECTION_URL=mongodb://mongodb:27017/genieacs
+      - GENIEACS_UI_INTERFACE=0.0.0.0
+      - GENIEACS_UI_PORT=3000
+      - GENIEACS_UI_JWT_SECRET=secret
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongodb
+      - genieacs-nbi
+    command: genieacs-ui
+    networks:
+      - genieacs
+
   genieacs-cwmp:
-    image: genieacs/genieacs:1.2.13
+    build: .
+    image: genieacs-local:1.2.16
     container_name: genieacs-cwmp
-    restart: always
+    restart: unless-stopped
     environment:
       - GENIEACS_MONGODB_CONNECTION_URL=mongodb://mongodb:27017/genieacs
       - GENIEACS_CWMP_INTERFACE=0.0.0.0
@@ -25,13 +45,15 @@ services:
       - "7547:7547"
     depends_on:
       - mongodb
+    command: genieacs-cwmp
     networks:
       - genieacs
 
   genieacs-nbi:
-    image: genieacs/genieacs:1.2.13
+    build: .
+    image: genieacs-local:1.2.16
     container_name: genieacs-nbi
-    restart: always
+    restart: unless-stopped
     environment:
       - GENIEACS_MONGODB_CONNECTION_URL=mongodb://mongodb:27017/genieacs
       - GENIEACS_NBI_INTERFACE=0.0.0.0
@@ -40,13 +62,15 @@ services:
       - "7557:7557"
     depends_on:
       - mongodb
+    command: genieacs-nbi
     networks:
       - genieacs
 
   genieacs-fs:
-    image: genieacs/genieacs:1.2.13
+    build: .
+    image: genieacs-local:1.2.16
     container_name: genieacs-fs
-    restart: always
+    restart: unless-stopped
     environment:
       - GENIEACS_MONGODB_CONNECTION_URL=mongodb://mongodb:27017/genieacs
       - GENIEACS_FS_INTERFACE=0.0.0.0
@@ -58,28 +82,14 @@ services:
       - "7567:7567"
     depends_on:
       - mongodb
-    networks:
-      - genieacs
-
-  genieacs-ui:
-    image: genieacs/genieacs:1.2.13
-    container_name: genieacs-ui
-    restart: always
-    environment:
-      - GENIEACS_MONGODB_CONNECTION_URL=mongodb://mongodb:27017/genieacs
-      - GENIEACS_UI_INTERFACE=0.0.0.0
-      - GENIEACS_UI_PORT=3000
-      - GENIEACS_UI_JWT_SECRET=your-secret-key-change-this-in-production
-    depends_on:
-      - mongodb
-      - genieacs-nbi
+    command: genieacs-fs
     networks:
       - genieacs
 
   nginx:
     image: nginx:alpine
     container_name: genieacs-nginx
-    restart: always
+    restart: unless-stopped
     ports:
       - "80:80"
     volumes:
@@ -99,3 +109,4 @@ volumes:
 
 networks:
   genieacs:
+    name: genieacs

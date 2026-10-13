@@ -23,11 +23,11 @@ GenieACS dengan dukungan multi-vendor lengkap, dashboard multi-tab, dan skrip in
 #### Windows
 
 ```powershell
-cd c:\Users\MSTORE-MONITORING\Documents\Genieacs
+cd path\to\genieacs
 .\install.ps1
 ```
 
-Setelah container berjalan, tunggu 30 detik lalu restore konfigurasi:
+Skrip `install.ps1` akan membangun image Docker, menyalakan container, dan otomatis me-restore konfigurasi multi-vendor. Jika ingin me-restore ulang secara manual:
 
 ```powershell
 .\restore-config.ps1
@@ -36,12 +36,12 @@ Setelah container berjalan, tunggu 30 detik lalu restore konfigurasi:
 #### Linux
 
 ```bash
-cd /path/to/Genieacs
+cd /path/to/genieacs
 chmod +x *.sh
 ./install.sh
 ```
 
-Setelah container berjalan, tunggu 30 detik lalu restore konfigurasi:
+Skrip `install.sh` akan menyalakan container dan otomatis me-restore konfigurasi multi-vendor. Jika ingin me-restore ulang secara manual:
 
 ```bash
 ./restore-config.sh

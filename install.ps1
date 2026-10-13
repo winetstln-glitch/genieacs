@@ -1,11 +1,11 @@
 # GenieACS Installer for Windows
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  GenieACS Installation Script" -ForegroundColor Cyan
+Write-Host "  GenieACS Windows Installation Script" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
 
 # Check if running as administrator
-Write-Host "[0/5] Checking administrator privileges..." -ForegroundColor Yellow
+Write-Host "[0/4] Checking administrator privileges..." -ForegroundColor Yellow
 $currentPrincipal = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
 if (-not $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     Write-Host "ERROR - This script requires administrator privileges!" -ForegroundColor Red
@@ -21,98 +21,113 @@ Write-Host "OK - Running as administrator" -ForegroundColor Green
 Write-Host ""
 
 # Check if Docker is installed
-Write-Host "[1/5] Checking Docker installation..." -ForegroundColor Yellow
+Write-Host "[1/4] Checking Docker installation..." -ForegroundColor Yellow
+$dockerInstalled = $false
 try {
-    docker --version | Out-Null
+    $null = docker --version
+    $dockerInstalled = $true
     Write-Host "OK - Docker is installed" -ForegroundColor Green
 } catch {
-    Write-Host "Docker is not installed. Attempting to install automatically..." -ForegroundColor Yellow
-    
-    # Check if winget is available
+    Write-Host "Docker is not installed. Attempting to install automatically via winget..." -ForegroundColor Yellow
     try {
-        winget --version | Out-Null
-        Write-Host "OK - winget is available" -ForegroundColor Green
-        
-        Write-Host ""
-        Write-Host "Installing Docker Desktop..." -ForegroundColor Yellow
-        Write-Host "This may take several minutes. Please wait..." -ForegroundColor Cyan
-        Write-Host "Note: You may see a UAC prompt - please click Yes" -ForegroundColor Yellow
-        Write-Host ""
-        
+        $null = winget --version
+        Write-Host "OK - winget is available, installing Docker Desktop..." -ForegroundColor Green
         winget install --id Docker.DockerDesktop -e --accept-package-agreements --accept-source-agreements
         
         if ($LASTEXITCODE -eq 0) {
             Write-Host ""
-            Write-Host "========================================" -ForegroundColor Cyan
-            Write-Host "  Docker Desktop Installed!" -ForegroundColor Green
-            Write-Host "========================================" -ForegroundColor Cyan
-            Write-Host ""
-            Write-Host "IMPORTANT: Please follow these steps:" -ForegroundColor Yellow
-            Write-Host "1. Start Docker Desktop from Start Menu" -ForegroundColor White
-            Write-Host "2. Complete the Docker Desktop setup wizard" -ForegroundColor White
-            Write-Host "3. Wait for Docker Engine to be ready (whale icon in system tray)" -ForegroundColor White
-            Write-Host "4. Restart this script: .\install.ps1" -ForegroundColor White
-            Write-Host ""
+            Write-Host "Docker Desktop installed successfully!" -ForegroundColor Green
+            Write-Host "Please start Docker Desktop from the Start Menu, wait for it to run, then re-run .\install.ps1" -ForegroundColor Yellow
             exit 0
         } else {
-            Write-Host ""
-            Write-Host "ERROR - Docker Desktop installation failed (exit code: $LASTEXITCODE)" -ForegroundColor Red
-            Write-Host ""
-            Write-Host "Please install Docker Desktop manually:" -ForegroundColor Yellow
-            Write-Host "1. Download from: https://www.docker.com/products/docker-desktop" -ForegroundColor Cyan
-            Write-Host "2. Run the installer as Administrator" -ForegroundColor White
-            Write-Host "3. Complete the installation" -ForegroundColor White
-            Write-Host "4. Restart this script" -ForegroundColor White
-            Write-Host ""
+            Write-Host "ERROR - Docker Desktop installation failed." -ForegroundColor Red
+            Write-Host "Please download and install Docker Desktop manually from: https://www.docker.com/products/docker-desktop" -ForegroundColor Yellow
             exit 1
         }
     } catch {
-        Write-Host "ERROR - winget is not available or failed to install Docker" -ForegroundColor Red
-        Write-Host ""
-        Write-Host "Please install Docker Desktop manually:" -ForegroundColor Yellow
-        Write-Host "Download: https://www.docker.com/products/docker-desktop" -ForegroundColor Cyan
-        Write-Host ""
+        Write-Host "ERROR - winget is not available." -ForegroundColor Red
+        Write-Host "Please download and install Docker Desktop manually: https://www.docker.com/products/docker-desktop" -ForegroundColor Yellow
         exit 1
     }
 }
 
-# Check if Docker Compose is available
-Write-Host "[2/5] Checking Docker Compose..." -ForegroundColor Yellow
+# Verify Docker Daemon is running
+Write-Host "Verifying Docker daemon status..." -ForegroundColor Gray
+$dockerReady = $false
 try {
-    docker-compose --version | Out-Null
-    Write-Host "OK - Docker Compose is available" -ForegroundColor Green
-} catch {
+    $null = docker info 2>$null
+    if ($LASTEXITCODE -eq 0) {
+        $dockerReady = $true
+        Write-Host "OK - Docker Engine is running" -ForegroundColor Green
+    }
+} catch {}
+
+if (-not $dockerReady) {
+    Write-Host "ERROR - Docker is installed but Docker Desktop is not running!" -ForegroundColor Red
+    Write-Host "Please start Docker Desktop from the Start Menu and wait until the whale icon is solid, then re-run .\install.ps1" -ForegroundColor Yellow
+    exit 1
+}
+
+# Check if Docker Compose is available
+Write-Host "[2/4] Checking Docker Compose..." -ForegroundColor Yellow
+$composeCmd = $null
+if (Get-Command docker-compose -ErrorAction SilentlyContinue) {
+    $composeCmd = "docker-compose"
+    Write-Host "OK - docker-compose (v1) found" -ForegroundColor Green
+} else {
+    try {
+        & docker compose version | Out-Null
+        if ($LASTEXITCODE -eq 0) {
+            $composeCmd = "docker compose"
+            Write-Host "OK - docker compose (v2) found" -ForegroundColor Green
+        }
+    } catch {}
+}
+
+if (-not $composeCmd) {
     Write-Host "ERROR - Docker Compose not found" -ForegroundColor Red
     exit 1
 }
 
 # Start containers
-Write-Host "[3/5] Starting GenieACS containers..." -ForegroundColor Yellow
-docker-compose up -d
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "OK - Containers started successfully" -ForegroundColor Green
+Write-Host "[3/4] Building and starting GenieACS containers..." -ForegroundColor Yellow
+if ($composeCmd -eq "docker-compose") {
+    docker-compose up -d --build
 } else {
+    docker compose up -d --build
+}
+
+if ($LASTEXITCODE -ne 0) {
     Write-Host "ERROR - Failed to start containers" -ForegroundColor Red
     exit 1
+}
+Write-Host "OK - Containers started successfully" -ForegroundColor Green
+
+# Restore Multi-Vendor configuration automatically
+Write-Host ""
+Write-Host "[4/4] Restoring Multi-Vendor configuration & Virtual Parameters..." -ForegroundColor Yellow
+Write-Host "Waiting 15 seconds for MongoDB to initialize..." -ForegroundColor Gray
+Start-Sleep -Seconds 15
+
+if (Test-Path ".\restore-config.ps1") {
+    & .\restore-config.ps1
+} else {
+    Write-Host "WARNING - restore-config.ps1 not found. Run restore manually if needed." -ForegroundColor Yellow
 }
 
 Write-Host ""
 Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "  Installation Complete!" -ForegroundColor Green
+Write-Host "  Installation & Setup Complete!" -ForegroundColor Green
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "[4/5] Containers started successfully" -ForegroundColor Green
-Write-Host "[5/5] Installation complete!" -ForegroundColor Green
+Write-Host "GenieACS Access URLs:" -ForegroundColor White
+Write-Host "  Dashboard (Recommended): http://localhost" -ForegroundColor Cyan
+Write-Host "  GenieACS Direct UI:      http://localhost:3000" -ForegroundColor Cyan
+Write-Host "  CWMP (TR-069):          http://localhost:7547" -ForegroundColor Cyan
+Write-Host "  NBI (REST API):         http://localhost:7557" -ForegroundColor Cyan
+Write-Host "  File Server:            http://localhost:7567" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "Access GenieACS:" -ForegroundColor White
-Write-Host "  Dashboard: http://localhost" -ForegroundColor Cyan
-Write-Host "  GenieACS UI: http://localhost:3000" -ForegroundColor Cyan
-Write-Host ""
-Write-Host "Default credentials:" -ForegroundColor White
+Write-Host "Default UI Credentials:" -ForegroundColor White
 Write-Host "  Username: admin" -ForegroundColor Yellow
 Write-Host "  Password: admin" -ForegroundColor Yellow
-Write-Host ""
-Write-Host "To restore multi-vendor configuration:" -ForegroundColor White
-Write-Host "  1. Wait 30 seconds for MongoDB to start" -ForegroundColor Yellow
-Write-Host "  2. Run: .\restore-config.ps1" -ForegroundColor Yellow
 Write-Host ""

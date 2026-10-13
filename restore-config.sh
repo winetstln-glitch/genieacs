@@ -8,22 +8,36 @@ CYAN='\033[0;36m'
 NC='\033[0m'
 
 echo -e "${CYAN}========================================${NC}"
-echo -e "${CYAN}  Restoring GenieACS Configuration${NC}"
+echo -e "${CYAN}  Restoring GenieACS Multi-Vendor Config${NC}"
 echo -e "${CYAN}========================================${NC}"
 echo ""
+
+# Determine DB directory
+DB_PATH=""
+if [ -d "db" ]; then
+    DB_PATH="db"
+elif [ -d "multitab/db" ]; then
+    DB_PATH="multitab/db"
+else
+    echo -e "${RED}ERROR - Database folder 'db' not found!${NC}"
+    echo -e "${YELLOW}Ensure the 'db' folder is present in the current directory.${NC}"
+    exit 1
+fi
+echo -e "${CYAN}Using database source: ${DB_PATH}${NC}"
 
 # Check if containers are running
 echo -e "${YELLOW}[1/3] Checking MongoDB container...${NC}"
 MONGO_RUNNING=$(docker inspect -f '{{.State.Running}}' genieacs-mongodb 2>/dev/null)
 if [ "$MONGO_RUNNING" != "true" ]; then
-    echo -e "${RED}✗ MongoDB container is not running. Start containers first with: docker-compose up -d${NC}"
+    echo -e "${RED}✗ MongoDB container 'genieacs-mongodb' is not running.${NC}"
+    echo -e "${YELLOW}Start containers first with: docker compose up -d${NC}"
     exit 1
 fi
-echo -e "${GREEN}✓ MongoDB is running${NC}"
+echo -e "${GREEN}✓ MongoDB container is running${NC}"
 
 # Copy db files to container
-echo -e "${YELLOW}[2/3] Copying configuration files...${NC}"
-docker cp db/. genieacs-mongodb:/tmp/genieacs-db
+echo -e "${YELLOW}[2/3] Copying configuration files to MongoDB container...${NC}"
+docker cp "${DB_PATH}/." genieacs-mongodb:/tmp/genieacs-db
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ Configuration files copied${NC}"
 else
@@ -32,7 +46,7 @@ else
 fi
 
 # Restore database
-echo -e "${YELLOW}[3/3] Restoring database...${NC}"
+echo -e "${YELLOW}[3/3] Restoring database collections (mongorestore)...${NC}"
 docker exec genieacs-mongodb mongorestore --db genieacs --drop /tmp/genieacs-db
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✓ Database restored successfully${NC}"
@@ -43,16 +57,16 @@ fi
 
 # Restart GenieACS services
 echo ""
-echo -e "${YELLOW}Restarting GenieACS services...${NC}"
+echo -e "${YELLOW}Restarting GenieACS services to reload configuration...${NC}"
 docker restart genieacs-cwmp genieacs-nbi genieacs-fs genieacs-ui
 echo -e "${GREEN}✓ Services restarted${NC}"
 
 echo ""
 echo -e "${CYAN}========================================${NC}"
-echo -e "${GREEN}  Configuration Restored!${NC}"
+echo -e "${GREEN}  Configuration Restored Successfully!${NC}"
 echo -e "${CYAN}========================================${NC}"
 echo ""
-echo -e "${NC}Multi-vendor support is now available:"
+echo -e "${NC}Multi-vendor support & Multi-Tab UI are now active:"
 echo -e "${CYAN}  • Huawei${NC}"
 echo -e "${CYAN}  • FiberHome${NC}"
 echo -e "${CYAN}  • ZTE${NC}"
@@ -60,5 +74,8 @@ echo -e "${CYAN}  • CData${NC}"
 echo -e "${CYAN}  • GGCLink${NC}"
 echo -e "${CYAN}  • VSOL${NC}"
 echo -e "${CYAN}  • Mikrotik${NC}"
-echo -e "${CYAN}  • And many more!${NC}"
+echo ""
+echo -e "${NC}Access GenieACS:"
+echo -e "${CYAN}  Dashboard:   http://localhost${NC}"
+echo -e "${CYAN}  GenieACS UI: http://localhost:3000 (admin / admin)${NC}"
 echo ""
