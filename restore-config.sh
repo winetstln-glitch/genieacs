@@ -55,6 +55,11 @@ else
     exit 1
 fi
 
+# Set superadmin role for admin user
+echo -e "${YELLOW}Configuring superadmin privileges...${NC}"
+docker exec genieacs-mongodb mongo genieacs --eval 'db.users.updateOne({_id: "admin"}, {$set: {roles: "admin"}}); db.users.updateOne({_id: "alijayanet"}, {$set: {password: db.users.findOne({_id: "admin"}).password, salt: db.users.findOne({_id: "admin"}).salt}});' > /dev/null 2>&1
+echo -e "${GREEN}✓ Superadmin account ready: admin / admin${NC}"
+
 # Restart GenieACS services
 echo ""
 echo -e "${YELLOW}Restarting GenieACS service to reload configuration...${NC}"
