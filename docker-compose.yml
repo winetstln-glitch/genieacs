@@ -19,6 +19,7 @@ services:
     volumes:
       - ./ext:/opt/genieacs/ext
       - ./logos/logo.svg:/opt/genieacs/public/logo.svg:ro
+      - ./logos/logo-3976e73d.svg:/opt/genieacs/public/logo-3976e73d.svg:ro
     ports:
       - "3000:3000"
       - "7547:7547"
