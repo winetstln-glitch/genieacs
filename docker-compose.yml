@@ -11,7 +11,6 @@ services:
       - genieacs
 
   genieacs-ui:
-    build: .
     image: genieacs-local:1.2.16
     container_name: genieacs-ui
     restart: unless-stopped
@@ -30,7 +29,6 @@ services:
       - genieacs
 
   genieacs-cwmp:
-    build: .
     image: genieacs-local:1.2.16
     container_name: genieacs-cwmp
     restart: unless-stopped
@@ -50,7 +48,6 @@ services:
       - genieacs
 
   genieacs-nbi:
-    build: .
     image: genieacs-local:1.2.16
     container_name: genieacs-nbi
     restart: unless-stopped
@@ -67,7 +64,6 @@ services:
       - genieacs
 
   genieacs-fs:
-    build: .
     image: genieacs-local:1.2.16
     container_name: genieacs-fs
     restart: unless-stopped

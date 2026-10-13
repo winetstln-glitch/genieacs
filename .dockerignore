@@ -1,0 +1,10 @@
+.git
+.gitignore
+multitab
+db
+logos
+ext
+files
+*.md
+*.ps1
+*.sh
